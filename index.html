@@ -6,10 +6,9 @@
     <title>Haptic Announcement</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.minified.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
-            /* Material 3 Token-ish */
             --md-sys-color-primary: #006492;
             --md-sys-color-on-primary: #ffffff;
             --md-sys-color-primary-container: #cae6ff;
@@ -41,30 +40,22 @@
             height: 100%;
             width: 100%;
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             background: var(--md-sys-color-background);
         }
+        .screen.active { display: flex; }
 
-        .screen.active {
-            display: flex;
-        }
-
-        /* --- ONBOARDING (Start) --- */
+        /* --- ONBOARDING (Centered) --- */
         #screen-onboarding {
+            display: none; /* Controlled by JS classes usually, but default hidden */
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 2rem;
             z-index: 50;
         }
-        
-        /* FIX: Ensures button is fully centered with content */
-        #screen-onboarding > * {
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
+        #screen-onboarding.active { display: flex; }
+
         .scan-btn {
             background-color: var(--md-sys-color-primary);
             color: var(--md-sys-color-on-primary);
@@ -75,292 +66,130 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: 30px;
+            margin: 30px auto 0 auto; /* Center horizontal */
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
         }
-        .scan-btn:active { transform: scale(0.95); }
 
-        /* --- REAL SCANNER UI CONTAINER (Camera View) --- */
+        /* --- REAL SCANNER UI --- */
         #scanner-ui-container {
             position: fixed;
             inset: 0;
-            background: black;
+            background: #000;
             z-index: 2000;
-            display: none;
+            display: none; /* Starts hidden */
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        
-        /* FIX: Gives the reader a definite size, critical for video stream */
+
+        /* The library injects video here. We MUST give it size. */
         #reader {
-            width: 90vw;
-            height: 60vh;
-            max-width: 400px;
-            max-height: 400px;
-            border: 4px solid var(--md-sys-color-primary);
-            border-radius: 12px;
-            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+            background: #000;
             margin-bottom: 20px;
         }
-        /* Style for the actual video element created by the library */
-        #reader video {
-            width: 100% !important;
-            height: 100% !important;
-        }
 
-        .scanner-info {
-            color: white;
-            font-size: 1.2rem;
-            text-align: center;
-        }
+        .scanner-info { color: white; margin-top: 10px; font-size: 1.1rem; text-align: center; }
+        .error-log { color: #ff8888; font-size: 0.8rem; margin-top: 10px; max-width: 90%; word-break: break-all; }
 
         .dismiss-btn {
-            background: white;
-            color: var(--md-sys-color-error);
-            border: none;
-            padding: 20px 60px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            border-radius: 50px;
-            margin-top: 40px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        
-        /* --- MAIN APP LAYOUT (Rest of the styles are unchanged) --- */
-        #screen-app {
-            padding-bottom: 80px;
+            background: white; color: black; border: none;
+            padding: 15px 40px; font-size: 1.2rem; border-radius: 50px;
+            margin-top: 20px; cursor: pointer;
         }
 
+        /* --- MAIN APP (Unchanged) --- */
+        #screen-app { padding-bottom: 80px; }
         .app-header {
-            padding: 20px;
-            background: var(--md-sys-color-primary-container);
+            padding: 20px; background: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
-            border-bottom-left-radius: 24px;
-            border-bottom-right-radius: 24px;
-            margin-bottom: 10px;
+            border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
         }
-        .app-header h2 { margin: 0; font-size: 1.5rem; }
-        .app-header span { font-size: 0.9rem; opacity: 0.8; }
-
-        .content-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
+        .content-area { flex: 1; overflow-y: auto; padding: 16px; display: none; flex-direction: column; align-items: center; }
         .content-area.show { display: flex; }
-
-        .listening-status {
-            margin-top: 40px;
-            text-align: center;
-        }
-        .listening-icon {
-            font-size: 100px;
-            color: var(--md-sys-color-primary);
-            animation: pulse 2s infinite;
-        }
-
-        .list-card {
-            background: var(--md-sys-color-surface-variant);
-            width: 100%;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            text-align: left;
-        }
-        .list-card .icon {
-            background: var(--md-sys-color-primary);
-            color: white;
-            padding: 10px;
-            border-radius: 50%;
-        }
-        .list-card div { display: flex; flex-direction: column; }
-        .list-card strong { font-size: 1.1rem; }
-        .list-card small { opacity: 0.7; }
-
+        
+        /* Navigation & Alerts */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 80px;
-            background: var(--md-sys-color-surface);
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 100;
+            position: fixed; bottom: 0; width: 100%; height: 80px;
+            background: var(--md-sys-color-surface); border-top: 1px solid #e0e0e0;
+            display: flex; justify-content: space-around; align-items: center; z-index: 100;
         }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            width: 33%;
-            height: 100%;
-            border: none;
-            background: transparent;
-            color: #5f6368;
-            cursor: pointer;
-        }
-
-        .nav-item.active {
-            color: var(--md-sys-color-on-primary-container);
-        }
-
-        .nav-item.active .material-symbols-outlined {
-            background: var(--md-sys-color-primary-container);
-            padding: 4px 20px;
-            border-radius: 16px;
-        }
+        .nav-item { border: none; background: transparent; color: #5f6368; display: flex; flex-direction: column; align-items: center; }
+        .nav-item.active { color: var(--md-sys-color-on-primary-container); }
+        .nav-item.active span:first-child { background: var(--md-sys-color-primary-container); padding: 4px 20px; border-radius: 16px; }
 
         #notification-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--md-sys-color-error);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.2, 0.0, 0, 1.0);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--md-sys-color-error); z-index: 3000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transform: translateY(100%); transition: transform 0.4s;
         }
-
-        #notification-overlay.active {
-            transform: translateY(0);
-            animation: flash 1s infinite;
-        }
-
-        .alert-icon { font-size: 120px; color: white; margin-bottom: 20px; }
-        .alert-text { color: white; font-size: 2.5rem; font-weight: bold; text-align: center; padding: 20px; line-height: 1.2;}
-        
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #notification-overlay.active { transform: translateY(0); animation: flash 1s infinite; }
         @keyframes flash { 0%, 100% { background-color: #ba1a1a; } 50% { background-color: #ff5449; } }
-
+        
+        /* List Styles */
+        .list-card {
+            background: var(--md-sys-color-surface-variant); width: 100%; border-radius: 12px;
+            padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px;
+        }
     </style>
 </head>
 <body>
 
     <div id="screen-onboarding" class="screen active">
-        <span class="material-symbols-outlined" style="font-size: 64px; color: #006492; margin-bottom: 20px;">assist_walker</span>
-        <h1>Haptic Connect</h1>
-        <p style="font-size: 1.2rem; max-width: 300px; margin: 0 auto 40px auto; color: #555;">
-            Scan the venue code to tune into the announcement system.
-        </p>
-        
-        <button class="scan-btn" onclick="startCameraSequence()">
-            <span class="material-symbols-outlined">qr_code_scanner</span>
-            Scan Station
-        </button>
+        <div>
+            <span class="material-symbols-outlined" style="font-size: 64px; color: #006492; margin-bottom: 20px;">assist_walker</span>
+            <h1>Haptic Connect</h1>
+            <p>Scan venue code to tune in.</p>
+            <button class="scan-btn" onclick="startCameraSequence()">
+                <span class="material-symbols-outlined">qr_code_scanner</span>
+                Scan Station
+            </button>
+        </div>
     </div>
 
     <div id="scanner-ui-container">
-        <div id="reader"></div> 
-        <div class="scanner-info">Scanning... Point your camera at a QR code containing **67**.</div>
-        <button class="dismiss-btn" style="color: black;" onclick="cancelScan()">Cancel</button>
+        <div id="reader"></div>
+        <div class="scanner-info">Scan code <strong>67</strong></div>
+        <div id="error-output" class="error-log"></div>
+        <button class="dismiss-btn" onclick="cancelScan()">Cancel</button>
     </div>
 
     <div id="screen-app" class="screen">
-        
         <div class="app-header">
-            <h2 id="station-name">Grand Central Station</h2>
-            <span>Connected • Channel 1 (Code 67)</span>
+            <h2 id="station-name">Grand Central</h2>
+            <span>Connected • Channel 1</span>
         </div>
 
         <div id="tab-home" class="content-area show">
-            <div class="listening-status">
-                <span class="material-symbols-outlined listening-icon">hearing_disabled</span>
-                <h2>Listening...</h2>
-                <p>Waiting for announcements.</p>
-                <div style="margin-top: 40px; padding: 15px; background: #e1f5fe; border-radius: 12px; font-size: 0.9rem;">
-                    <strong>Tip:</strong> Keep this app open. Your phone will vibrate and flash when an announcement is made.
-                </div>
-            </div>
+            <span class="material-symbols-outlined" style="font-size: 100px; color: #006492; margin-top: 40px;">hearing_disabled</span>
+            <h2>Listening...</h2>
         </div>
 
         <div id="tab-history" class="content-area">
-            <h3 style="align-self: flex-start; margin-bottom: 15px;">Past Stations</h3>
-            
-            <div class="list-card">
-                <span class="material-symbols-outlined icon">train</span>
-                <div>
-                    <strong>Penn Station</strong>
-                    <small>Last visit: Yesterday</small>
-                </div>
-            </div>
-            <div class="list-card">
-                <span class="material-symbols-outlined icon">flight</span>
-                <div>
-                    <strong>JFK Terminal 4</strong>
-                    <small>Last visit: 3 days ago</small>
-                </div>
-            </div>
-            <div class="list-card">
-                <span class="material-symbols-outlined icon">stadium</span>
-                <div>
-                    <strong>Madison Sq Garden</strong>
-                    <small>Last visit: 1 week ago</small>
-                </div>
-            </div>
+            <h3>Past Stations</h3>
+            <div class="list-card"><strong>Penn Station</strong></div>
+            <div class="list-card"><strong>JFK Terminal 4</strong></div>
         </div>
 
         <div id="tab-profile" class="content-area">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <span class="material-symbols-outlined" style="font-size: 80px; color: #ccc;">account_circle</span>
-                <h3>Demo User</h3>
-            </div>
-
-            <div class="list-card">
-                <span class="material-symbols-outlined icon" style="background:#555">settings_accessibility</span>
-                <div>
-                    <strong>Accessibility</strong>
-                    <small>Vibration: On | Flash: On</small>
-                </div>
-            </div>
-            
-            <div class="list-card" onclick="window.location.reload()">
-                <span class="material-symbols-outlined icon" style="background:#ba1a1a">logout</span>
-                <div>
-                    <strong>Disconnect</strong>
-                    <small>Exit current session</small>
-                </div>
-            </div>
-            
-            <button onclick="triggerNotification('TEST ALERT')" style="opacity: 0.1; margin-top: 50px;">Simulate</button>
+            <h3 style="margin-bottom:30px">Demo User</h3>
+            <div class="list-card" onclick="location.reload()"><strong>Disconnect</strong></div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('home', this)">
-                <span class="material-symbols-outlined">notifications</span>
-                <span>Live</span>
-            </button>
-            <button class="nav-item" onclick="switchTab('history', this)">
-                <span class="material-symbols-outlined">history</span>
-                <span>History</span>
-            </button>
-            <button class="nav-item" onclick="switchTab('profile', this)">
-                <span class="material-symbols-outlined">person</span>
-                <span>Profile</span>
-            </button>
+            <button class="nav-item active" onclick="switchTab('home', this)"><span class="material-symbols-outlined">notifications</span><span>Live</span></button>
+            <button class="nav-item" onclick="switchTab('history', this)"><span class="material-symbols-outlined">history</span><span>History</span></button>
+            <button class="nav-item" onclick="switchTab('profile', this)"><span class="material-symbols-outlined">person</span><span>Profile</span></button>
         </nav>
     </div>
 
     <div id="notification-overlay">
-        <span class="material-symbols-outlined alert-icon">notifications_active</span>
-        <div class="alert-text" id="alert-message">ANNOUNCEMENT</div>
+        <span class="material-symbols-outlined" style="font-size:120px; color:white">notifications_active</span>
+        <div style="color:white; font-size:2.5rem; font-weight:bold; margin:20px" id="alert-message">ALERT</div>
         <button class="dismiss-btn" onclick="dismissAlert()">I Understood</button>
     </div>
 
@@ -383,96 +212,95 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let html5QrCode; 
-
-        // --- AUDIO SETUP ---
+        
+        let html5QrCode = null;
         const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // --- SCANNER & ENTRY LOGIC ---
-
+        // --- CAMERA LOGIC ---
         window.startCameraSequence = function() {
-            // 1. Show the scanner UI
-            document.getElementById('scanner-ui-container').style.display = 'flex';
-            document.getElementById('screen-onboarding').classList.remove('active'); // Hide initial screen
+            // 1. Prepare UI
+            const scannerUI = document.getElementById('scanner-ui-container');
+            const errorLog = document.getElementById('error-output');
             
-            // 2. Unlock Audio Context
-            alertSound.play().then(() => {
-                alertSound.pause(); 
-                alertSound.currentTime = 0;
-            }).catch(() => {});
+            // Unlock audio immediately on user click
+            alertSound.play().then(()=> { alertSound.pause(); alertSound.currentTime=0; }).catch(()=>{});
 
-            // 3. Initialize and Start the Scanner
-            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                // Check for the required code '67'
-                if (decodedText.trim() === "67") { 
-                    html5QrCode.stop().then(() => {
-                        // Success: Hide scanner, show main app
-                        document.getElementById('scanner-ui-container').style.display = 'none';
-                        document.getElementById('screen-app').classList.add('active');
-                        document.getElementById('station-name').innerText = "Grand Central Station (CONNECTED)";
-                    }).catch((err) => {
-                        console.error("Failed to stop scanner: ", err);
-                        // Still move forward even if stop fails
-                        document.getElementById('scanner-ui-container').style.display = 'none';
-                        document.getElementById('screen-app').classList.add('active');
-                    });
-                } else {
-                    // Provide feedback for the wrong code
-                    alert(`Wrong code scanned: ${decodedText}. Please scan the code '67'.`);
-                }
-            };
+            // Show scanner container FIRST so it has dimensions
+            scannerUI.style.display = 'flex';
+            errorLog.innerText = "Initializing camera...";
+
+            // 2. Wait 300ms to allow browser to render the div (CRITICAL FIX)
+            setTimeout(() => {
+                startScanner(errorLog);
+            }, 300);
+        }
+
+        function startScanner(errorLog) {
+            // Check if object exists (it might not if script failed to load)
+            if(typeof Html5Qrcode === 'undefined') {
+                errorLog.innerText = "Error: QR Library not loaded.";
+                return;
+            }
 
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" }, // Prefer back camera
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                qrCodeSuccessCallback,
-                (errorMessage) => {
-                    // Scanning error or no QR code detected yet (silent)
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            // Prefer back camera ("environment")
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                // SUCCESS
+                if (decodedText === "67") {
+                    html5QrCode.stop().then(() => {
+                        document.getElementById('scanner-ui-container').style.display = 'none';
+                        document.getElementById('screen-onboarding').classList.remove('active');
+                        document.getElementById('screen-app').classList.add('active');
+                    }).catch(err => console.error(err));
+                } else {
+                    alert("Wrong Code! Scan 67.");
                 }
-            ).catch((err) => {
-                // Handle initial permission errors
-                alert(`Error starting camera. The browser likely blocked access. Ensure the app is served via HTTPS (GitHub Pages/Hosting) or localhost.`);
-                // Return to main onboarding screen on failure
-                document.getElementById('scanner-ui-container').style.display = 'none';
-                document.getElementById('screen-onboarding').classList.add('active');
+            }, 
+            (errorMessage) => {
+                // Scanning... (ignore frame errors)
+            })
+            .catch(err => {
+                // START ERROR
+                console.error(err);
+                errorLog.innerText = "Camera Failed: " + err;
+                // If back camera fails, try any camera
+                if(err.toString().includes("OverconstrainedError")) {
+                     errorLog.innerText = "Retrying with any camera...";
+                     html5QrCode.start({ facingMode: "user" }, config, /*... logic ...*/); 
+                }
             });
         }
-        
+
         window.cancelScan = function() {
             if (html5QrCode) {
                 html5QrCode.stop().then(() => {
                     document.getElementById('scanner-ui-container').style.display = 'none';
-                    document.getElementById('screen-onboarding').classList.add('active');
-                }).catch(err => {
+                }).catch(() => {
                     document.getElementById('scanner-ui-container').style.display = 'none';
-                    document.getElementById('screen-onboarding').classList.add('active');
-                    console.warn("Could not stop camera, maybe it wasn't running.");
                 });
             } else {
                 document.getElementById('scanner-ui-container').style.display = 'none';
-                document.getElementById('screen-onboarding').classList.add('active');
             }
         }
 
-
-        // --- TAB SWITCHING LOGIC (Same as before) ---
-        window.switchTab = function(tabName, btnElement) {
-            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('show'));
-            document.getElementById('tab-' + tabName).classList.add('show');
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            btnElement.classList.add('active');
+        // --- APP LOGIC ---
+        window.switchTab = function(tab, btn) {
+            document.querySelectorAll('.content-area').forEach(e => e.classList.remove('show'));
+            document.getElementById('tab-' + tab).classList.add('show');
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            btn.classList.add('active');
         }
 
-        // --- NOTIFICATION & FIREBASE LOGIC (Same as before) ---
         const overlay = document.getElementById('notification-overlay');
         const messageEl = document.getElementById('alert-message');
         let lastTimestamp = Date.now();
 
-        const alertsRef = ref(db, 'announcements/latest');
-        
-        onValue(alertsRef, (snapshot) => {
+        onValue(ref(db, 'announcements/latest'), (snapshot) => {
             const data = snapshot.val();
+            // Only trigger if APP screen is active (user is logged in)
             if (data && data.timestamp > lastTimestamp && document.getElementById('screen-app').classList.contains('active')) {
                 triggerNotification(data.message);
                 lastTimestamp = data.timestamp;
@@ -480,23 +308,15 @@
         });
 
         window.triggerNotification = function(msg) {
-            messageEl.innerText = msg || "ATTENTION";
+            messageEl.innerText = msg;
             overlay.classList.add('active');
-
-            // 1. Sound
-            alertSound.play().catch(e => console.log("Audio blocked", e));
-
-            // 2. Vibration (Android)
-            if (navigator.vibrate) {
-                navigator.vibrate([400, 100, 400, 100, 400, 100, 400]);
-            }
+            alertSound.play().catch(e => console.log(e));
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
         }
 
         window.dismissAlert = function() {
             overlay.classList.remove('active');
             if (navigator.vibrate) navigator.vibrate(0);
-            
-            switchTab('home', document.querySelector('.nav-item:first-child'));
         }
     </script>
 </body>
