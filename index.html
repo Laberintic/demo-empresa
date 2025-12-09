@@ -9,10 +9,13 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
-            --md-sys-color-primary: #006492;
+            /* Dynamic Variables, controlled by Firebase */
+            --md-sys-color-primary: #006492; /* Default/Initial Value */
             --md-sys-color-on-primary: #ffffff;
-            --md-sys-color-primary-container: #cae6ff;
+            --md-sys-color-primary-container: #cae6ff; /* Derived from Primary */
             --md-sys-color-on-primary-container: #001e30;
+            
+            /* Static Material 3 Tokens */
             --md-sys-color-background: #f8fdff;
             --md-sys-color-on-background: #001f2b;
             --md-sys-color-surface: #f8fdff;
@@ -47,14 +50,12 @@
 
         /* --- ONBOARDING (Centered) --- */
         #screen-onboarding {
-            display: none; /* Controlled by JS classes usually, but default hidden */
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 2rem;
             z-index: 50;
         }
-        #screen-onboarding.active { display: flex; }
 
         .scan-btn {
             background-color: var(--md-sys-color-primary);
@@ -66,25 +67,24 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin: 30px auto 0 auto; /* Center horizontal */
+            margin: 30px auto 0 auto;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-
+        
         /* --- REAL SCANNER UI --- */
         #scanner-ui-container {
             position: fixed;
             inset: 0;
             background: #000;
             z-index: 2000;
-            display: none; /* Starts hidden */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
 
-        /* The library injects video here. We MUST give it size. */
         #reader {
             width: 100%;
             max-width: 500px;
@@ -101,47 +101,47 @@
             margin-top: 20px; cursor: pointer;
         }
 
-        /* --- MAIN APP (Unchanged) --- */
+        /* --- MAIN APP --- */
         #screen-app { padding-bottom: 80px; }
         .app-header {
-            padding: 20px; background: var(--md-sys-color-primary-container);
+            padding: 20px; 
+            /* Dynamic Color Usage */
+            background: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
             border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
         }
-        .content-area { flex: 1; overflow-y: auto; padding: 16px; display: none; flex-direction: column; align-items: center; }
-        .content-area.show { display: flex; }
-        
-        /* Navigation & Alerts */
-        .bottom-nav {
-            position: fixed; bottom: 0; width: 100%; height: 80px;
-            background: var(--md-sys-color-surface); border-top: 1px solid #e0e0e0;
-            display: flex; justify-content: space-around; align-items: center; z-index: 100;
-        }
-        .nav-item { border: none; background: transparent; color: #5f6368; display: flex; flex-direction: column; align-items: center; }
-        .nav-item.active { color: var(--md-sys-color-on-primary-container); }
-        .nav-item.active span:first-child { background: var(--md-sys-color-primary-container); padding: 4px 20px; border-radius: 16px; }
 
+        .content-area.show { display: flex; }
+        .listening-icon { color: var(--md-sys-color-primary) !important; }
+
+        /* Navigation */
+        .nav-item.active { color: var(--md-sys-color-on-primary-container); }
+        .nav-item.active span:first-child { 
+            /* Dynamic Color Usage */
+            background: var(--md-sys-color-primary-container); 
+        }
+
+        /* Static styles for simplicity, kept for structure */
+        .content-area { flex: 1; overflow-y: auto; padding: 16px; display: none; flex-direction: column; align-items: center; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 80px; background: var(--md-sys-color-surface); border-top: 1px solid #e0e0e0; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { border: none; background: transparent; color: #5f6368; display: flex; flex-direction: column; align-items: center; }
+        .list-card { background: var(--md-sys-color-surface-variant); width: 100%; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; }
+
+        /* Alert is red, does not change with accent color */
         #notification-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: var(--md-sys-color-error); z-index: 3000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transform: translateY(100%); transition: transform 0.4s;
         }
-        #notification-overlay.active { transform: translateY(0); animation: flash 1s infinite; }
-        @keyframes flash { 0%, 100% { background-color: #ba1a1a; } 50% { background-color: #ff5449; } }
-        
-        /* List Styles */
-        .list-card {
-            background: var(--md-sys-color-surface-variant); width: 100%; border-radius: 12px;
-            padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px;
-        }
+
     </style>
 </head>
 <body>
 
     <div id="screen-onboarding" class="screen active">
         <div>
-            <span class="material-symbols-outlined" style="font-size: 64px; color: #006492; margin-bottom: 20px;">assist_walker</span>
+            <span class="material-symbols-outlined" style="font-size: 64px; color: var(--md-sys-color-primary); margin-bottom: 20px;">assist_walker</span>
             <h1>Haptic Connect</h1>
             <p>Scan venue code to tune in.</p>
             <button class="scan-btn" onclick="startCameraSequence()">
@@ -153,19 +153,19 @@
 
     <div id="scanner-ui-container">
         <div id="reader"></div>
-        <div class="scanner-info">Scan code <strong>67</strong></div>
+        <div class="scanner-info">Scan the code: <strong id="required-qr-id">...</strong></div>
         <div id="error-output" class="error-log"></div>
         <button class="dismiss-btn" onclick="cancelScan()">Cancel</button>
     </div>
 
     <div id="screen-app" class="screen">
         <div class="app-header">
-            <h2 id="station-name">Grand Central</h2>
+            <h2 id="station-name">Loading...</h2>
             <span>Connected • Channel 1</span>
         </div>
 
         <div id="tab-home" class="content-area show">
-            <span class="material-symbols-outlined" style="font-size: 100px; color: #006492; margin-top: 40px;">hearing_disabled</span>
+            <span class="material-symbols-outlined listening-icon" style="font-size: 100px; margin-top: 40px;">hearing_disabled</span>
             <h2>Listening...</h2>
         </div>
 
@@ -197,8 +197,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        // Your web app's Firebase configuration (pasted from your Admin Panel code)
         const firebaseConfig = {
             apiKey: "AIzaSyBMw4lAz5iaPSpkK7KaVnFP-cejMTTMHPc",
             authDomain: "fir-empresa-bb9fb.firebaseapp.com",
@@ -216,61 +215,74 @@
         let html5QrCode = null;
         const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // --- CAMERA LOGIC ---
+        // Global variables for config
+        let requiredQrCode = "67";
+        const root = document.documentElement;
+
+        // --- 1. CONFIG LISTENER (Dynamic Theming and QR ID) ---
+        onValue(ref(db, 'config/theme'), (snapshot) => {
+            const config = snapshot.val();
+            if (config) {
+                // Update CSS Variables for Theming
+                root.style.setProperty('--md-sys-color-primary', config.color);
+                // Simple primary container derivation (lighter shade)
+                root.style.setProperty('--md-sys-color-primary-container', config.color + '44'); // Added 44 for opacity/lightness
+                
+                // Update UI Text
+                document.getElementById('station-name').innerText = config.name || "Haptic Connect Station";
+                document.getElementById('required-qr-id').innerText = config.qrId || "67";
+                
+                // Update QR Logic
+                requiredQrCode = config.qrId || "67";
+            }
+        }, { onlyOnce: false });
+
+
+        // --- 2. CAMERA LOGIC ---
         window.startCameraSequence = function() {
-            // 1. Prepare UI
             const scannerUI = document.getElementById('scanner-ui-container');
             const errorLog = document.getElementById('error-output');
             
             // Unlock audio immediately on user click
             alertSound.play().then(()=> { alertSound.pause(); alertSound.currentTime=0; }).catch(()=>{});
 
-            // Show scanner container FIRST so it has dimensions
             scannerUI.style.display = 'flex';
             errorLog.innerText = "Initializing camera...";
 
-            // 2. Wait 300ms to allow browser to render the div (CRITICAL FIX)
+            // Delay necessary for the scanner library to find the #reader div dimensions
             setTimeout(() => {
                 startScanner(errorLog);
             }, 300);
         }
 
         function startScanner(errorLog) {
-            // Check if object exists (it might not if script failed to load)
             if(typeof Html5Qrcode === 'undefined') {
-                errorLog.innerText = "Error: QR Library not loaded.";
+                errorLog.innerText = "Error: QR Library not loaded. Check network or local setup (must be served via HTTPS/localhost).";
                 return;
             }
 
             html5QrCode = new Html5Qrcode("reader");
-            
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
             
-            // Prefer back camera ("environment")
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                // SUCCESS
-                if (decodedText === "67") {
+                // SUCCESS: QR Code Detected
+                if (decodedText === requiredQrCode) {
                     html5QrCode.stop().then(() => {
                         document.getElementById('scanner-ui-container').style.display = 'none';
                         document.getElementById('screen-onboarding').classList.remove('active');
                         document.getElementById('screen-app').classList.add('active');
-                    }).catch(err => console.error(err));
+                    }).catch(err => console.error("Error stopping scanner:", err));
                 } else {
-                    alert("Wrong Code! Scan 67.");
+                    alert(`Wrong Code! Expected: ${requiredQrCode}. Scanned: ${decodedText}`);
                 }
             }, 
             (errorMessage) => {
-                // Scanning... (ignore frame errors)
+                // Ignore silent scanning errors
             })
             .catch(err => {
-                // START ERROR
-                console.error(err);
+                // START ERROR: Permission or device failure
+                console.error("Camera Start Error:", err);
                 errorLog.innerText = "Camera Failed: " + err;
-                // If back camera fails, try any camera
-                if(err.toString().includes("OverconstrainedError")) {
-                     errorLog.innerText = "Retrying with any camera...";
-                     html5QrCode.start({ facingMode: "user" }, config, /*... logic ...*/); 
-                }
             });
         }
 
@@ -286,7 +298,7 @@
             }
         }
 
-        // --- APP LOGIC ---
+        // --- 3. APP LOGIC (Notifications) ---
         window.switchTab = function(tab, btn) {
             document.querySelectorAll('.content-area').forEach(e => e.classList.remove('show'));
             document.getElementById('tab-' + tab).classList.add('show');
@@ -300,7 +312,6 @@
 
         onValue(ref(db, 'announcements/latest'), (snapshot) => {
             const data = snapshot.val();
-            // Only trigger if APP screen is active (user is logged in)
             if (data && data.timestamp > lastTimestamp && document.getElementById('screen-app').classList.contains('active')) {
                 triggerNotification(data.message);
                 lastTimestamp = data.timestamp;
