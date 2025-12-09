@@ -2,18 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Announcement Receiver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Haptic Announcement</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Material 3 Color Tokens (simplified) */
+            /* Material 3 Token-ish */
             --md-sys-color-primary: #006492;
             --md-sys-color-on-primary: #ffffff;
             --md-sys-color-primary-container: #cae6ff;
+            --md-sys-color-on-primary-container: #001e30;
             --md-sys-color-background: #f8fdff;
             --md-sys-color-on-background: #001f2b;
+            --md-sys-color-surface: #f8fdff;
+            --md-sys-color-surface-variant: #dde3ea;
             --md-sys-color-error: #ba1a1a;
+            --md-sys-color-on-error: #ffffff;
             --font-family: 'Roboto', sans-serif;
         }
 
@@ -22,120 +27,346 @@
             background-color: var(--md-sys-color-background);
             color: var(--md-sys-color-on-background);
             margin: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
             overflow: hidden;
-            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Large Status Indicator */
-        .status-container {
-            padding: 2rem;
-        }
-
-        .icon-large {
-            font-size: 120px;
-            color: var(--md-sys-color-primary);
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            margin: 0;
-            font-weight: 400;
-        }
-
-        p {
-            font-size: 1.2rem;
-            opacity: 0.8;
-            margin-top: 1rem;
-        }
-
-        /* The Notification Modal/Overlay */
-        #notification-overlay {
-            position: fixed;
+        /* --- SCREENS --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            position: absolute;
             top: 0;
             left: 0;
+            background: var(--md-sys-color-background);
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- ONBOARDING (Start) --- */
+        #screen-onboarding {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            z-index: 50;
+        }
+
+        .scan-btn {
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .scan-btn:active { transform: scale(0.95); }
+
+        /* --- FAKE SCANNER UI --- */
+        #scanner-overlay {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .camera-frame {
+            width: 70%;
+            height: 40%;
+            border: 4px solid white;
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 0 0 0 100vmax rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .scan-line {
             width: 100%;
-            height: 100%;
-            background-color: var(--md-sys-color-error); /* Red for alert */
+            height: 4px;
+            background: #00ff00;
+            position: absolute;
+            top: 0;
+            animation: scanMove 2s infinite linear;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        @keyframes scanMove {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+
+        /* --- MAIN APP LAYOUT --- */
+        #screen-app {
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        .app-header {
+            padding: 20px;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            margin-bottom: 10px;
+        }
+        .app-header h2 { margin: 0; font-size: 1.5rem; }
+        .app-header span { font-size: 0.9rem; opacity: 0.8; }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: none; /* Controlled by JS */
+            flex-direction: column;
+            align-items: center;
+        }
+        .content-area.show { display: flex; }
+
+        /* TAB 1: LISTENING */
+        .listening-status {
+            margin-top: 40px;
+            text-align: center;
+        }
+        .listening-icon {
+            font-size: 100px;
+            color: var(--md-sys-color-primary);
+            animation: pulse 2s infinite;
+        }
+
+        /* TAB 2 & 3: LIST ITEM STYLES */
+        .list-card {
+            background: var(--md-sys-color-surface-variant);
+            width: 100%;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-align: left;
+        }
+        .list-card .icon {
+            background: var(--md-sys-color-primary);
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+        }
+        .list-card div { display: flex; flex-direction: column; }
+        .list-card strong { font-size: 1.1rem; }
+        .list-card small { opacity: 0.7; }
+
+        /* --- BOTTOM NAVIGATION --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: var(--md-sys-color-surface);
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            transform: translateY(100%); /* Hidden by default */
+            gap: 4px;
+            width: 33%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            color: #5f6368;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .nav-item.active .material-symbols-outlined {
+            background: var(--md-sys-color-primary-container);
+            padding: 4px 20px;
+            border-radius: 16px;
+        }
+
+        /* --- ALERT OVERLAY (Red Screen) --- */
+        #notification-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--md-sys-color-error);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            transform: translateY(100%);
             transition: transform 0.4s cubic-bezier(0.2, 0.0, 0, 1.0);
         }
 
         #notification-overlay.active {
             transform: translateY(0);
-            animation: flash 1s infinite; /* Visual strobe for accessibility */
+            animation: flash 1s infinite;
         }
 
-        .alert-text {
-            color: white;
-            font-size: 3rem;
-            font-weight: bold;
-            padding: 20px;
-        }
-
+        .alert-icon { font-size: 120px; color: white; margin-bottom: 20px; }
+        .alert-text { color: white; font-size: 2.5rem; font-weight: bold; text-align: center; padding: 20px; line-height: 1.2;}
+        
         .dismiss-btn {
             background: white;
             color: var(--md-sys-color-error);
             border: none;
-            padding: 20px 40px;
+            padding: 20px 60px;
             font-size: 1.5rem;
+            font-weight: bold;
             border-radius: 50px;
-            margin-top: 50px;
+            margin-top: 40px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        @keyframes flash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        /* Initial Setup Overlay to allow Audio Context */
-        #start-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes flash { 0%, 100% { background-color: #ba1a1a; } 50% { background-color: #ff5449; } }
+
     </style>
 </head>
 <body>
 
-    <div class="status-container">
-        <span class="material-symbols-outlined icon-large">hearing_disabled</span>
-        <h1>Listening...</h1>
-        <p>Waiting for announcements.</p>
+    <div id="screen-onboarding" class="screen active">
+        <span class="material-symbols-outlined" style="font-size: 64px; color: #006492; margin-bottom: 20px;">assist_walker</span>
+        <h1>Haptic Connect</h1>
+        <p style="font-size: 1.2rem; max-width: 300px; margin: 0 auto 40px auto; color: #555;">
+            Scan the venue code to tune into the announcement system.
+        </p>
+        
+        <button class="scan-btn" onclick="startCameraSequence()">
+            <span class="material-symbols-outlined">qr_code_scanner</span>
+            Scan Station
+        </button>
+    </div>
+
+    <div id="scanner-overlay">
+        <div class="camera-frame">
+            <div class="scan-line"></div>
+        </div>
+        <p style="color: white; margin-top: 20px; font-size: 1.2rem;">Scanning...</p>
+    </div>
+
+    <div id="screen-app" class="screen">
+        
+        <div class="app-header">
+            <h2>Grand Central Station</h2>
+            <span>Connected • Channel 1</span>
+        </div>
+
+        <div id="tab-home" class="content-area show">
+            <div class="listening-status">
+                <span class="material-symbols-outlined listening-icon">hearing_disabled</span>
+                <h2>Listening...</h2>
+                <p>Waiting for announcements.</p>
+                <div style="margin-top: 40px; padding: 15px; background: #e1f5fe; border-radius: 12px; font-size: 0.9rem;">
+                    <strong>Tip:</strong> Keep this app open. Your phone will vibrate and flash when an announcement is made.
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-history" class="content-area">
+            <h3 style="align-self: flex-start; margin-bottom: 15px;">Past Stations</h3>
+            
+            <div class="list-card">
+                <span class="material-symbols-outlined icon">train</span>
+                <div>
+                    <strong>Penn Station</strong>
+                    <small>Last visit: Yesterday</small>
+                </div>
+            </div>
+            <div class="list-card">
+                <span class="material-symbols-outlined icon">flight</span>
+                <div>
+                    <strong>JFK Terminal 4</strong>
+                    <small>Last visit: 3 days ago</small>
+                </div>
+            </div>
+            <div class="list-card">
+                <span class="material-symbols-outlined icon">stadium</span>
+                <div>
+                    <strong>Madison Sq Garden</strong>
+                    <small>Last visit: 1 week ago</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-profile" class="content-area">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <span class="material-symbols-outlined" style="font-size: 80px; color: #ccc;">account_circle</span>
+                <h3>Demo User</h3>
+            </div>
+
+            <div class="list-card">
+                <span class="material-symbols-outlined icon" style="background:#555">settings_accessibility</span>
+                <div>
+                    <strong>Accessibility</strong>
+                    <small>Vibration: On | Flash: On</small>
+                </div>
+            </div>
+            
+            <div class="list-card" onclick="window.location.reload()">
+                <span class="material-symbols-outlined icon" style="background:#ba1a1a">logout</span>
+                <div>
+                    <strong>Disconnect</strong>
+                    <small>Exit current session</small>
+                </div>
+            </div>
+            
+            <button onclick="triggerNotification('TEST ALERT')" style="opacity: 0.1; margin-top: 50px;">Simulate</button>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('home', this)">
+                <span class="material-symbols-outlined">notifications</span>
+                <span>Live</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('history', this)">
+                <span class="material-symbols-outlined">history</span>
+                <span>History</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('profile', this)">
+                <span class="material-symbols-outlined">person</span>
+                <span>Profile</span>
+            </button>
+        </nav>
     </div>
 
     <div id="notification-overlay">
-        <span class="material-symbols-outlined" style="font-size: 100px; color: white;">notifications_active</span>
+        <span class="material-symbols-outlined alert-icon">notifications_active</span>
         <div class="alert-text" id="alert-message">ANNOUNCEMENT</div>
         <button class="dismiss-btn" onclick="dismissAlert()">I Understood</button>
-    </div>
-
-    <div id="start-overlay">
-        <button class="dismiss-btn" style="color: black;" onclick="startApp()">Tap to Start Demo</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
 
         // Your web app's Firebase configuration
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -153,54 +384,78 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // UI Elements
+        // --- AUDIO SETUP ---
+        // We initialize audio here but it only unlocks when user clicks "Scan"
+        const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+        // --- UI REFERENCES ---
+        window.startCameraSequence = function() {
+            // 1. Unlock Audio Context on this user interaction
+            alertSound.play().then(() => {
+                alertSound.pause(); 
+                alertSound.currentTime = 0;
+            }).catch(() => {});
+
+            // 2. Show Fake Scanner
+            document.getElementById('scanner-overlay').style.display = 'flex';
+
+            // 3. Wait 2 seconds then "Connect"
+            setTimeout(() => {
+                document.getElementById('scanner-overlay').style.display = 'none';
+                document.getElementById('screen-onboarding').classList.remove('active');
+                document.getElementById('screen-app').classList.add('active');
+            }, 2000);
+        }
+
+        // --- TAB SWITCHING LOGIC ---
+        window.switchTab = function(tabName, btnElement) {
+            // Hide all contents
+            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('show'));
+            // Show selected
+            document.getElementById('tab-' + tabName).classList.add('show');
+
+            // Update Nav Icons
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        // --- NOTIFICATION LOGIC ---
         const overlay = document.getElementById('notification-overlay');
         const messageEl = document.getElementById('alert-message');
-        const startOverlay = document.getElementById('start-overlay');
-        
-        // Audio Setup
-        const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Simple ding sound
-        
-        // This variable tracks the last timestamp we handled so we don't re-alert on page load
         let lastTimestamp = Date.now();
 
-        // 1. Listen for Database Changes
+        // Listen for Database Changes
         const alertsRef = ref(db, 'announcements/latest');
         
         onValue(alertsRef, (snapshot) => {
             const data = snapshot.val();
-            
             if (data && data.timestamp > lastTimestamp) {
+                // Ensure we are past the onboarding screen before alerting? 
+                // Actually, for safety, alert anyway if connected.
                 triggerNotification(data.message);
                 lastTimestamp = data.timestamp;
             }
         });
 
-        function triggerNotification(msg) {
+        window.triggerNotification = function(msg) {
             messageEl.innerText = msg || "ATTENTION";
             overlay.classList.add('active');
 
-            // 1. Play Sound
+            // 1. Sound
             alertSound.play().catch(e => console.log("Audio blocked", e));
 
-            // 2. Vibration (Android Only - iOS ignores this)
+            // 2. Vibration (Android)
             if (navigator.vibrate) {
-                // Pattern: Vibrate 500ms, pause 200ms, vibrate 500ms
                 navigator.vibrate([500, 200, 500, 200, 500]);
             }
         }
 
-        // Global functions for HTML buttons
         window.dismissAlert = function() {
             overlay.classList.remove('active');
-            // Stop vibration
             if (navigator.vibrate) navigator.vibrate(0);
-        }
-
-        window.startApp = function() {
-            startOverlay.style.display = 'none';
-            // Play silent sound to unlock audio context on iOS
-            alertSound.play().then(() => alertSound.pause()).catch(() => {});
+            
+            // Go back to home tab automatically
+            switchTab('home', document.querySelector('.nav-item:first-child'));
         }
     </script>
 </body>
