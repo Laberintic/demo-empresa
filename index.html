@@ -255,7 +255,7 @@
 
     <div id="scanner-ui-container">
         <div id="reader"></div>
-        <div class="scanner-info">Scanning... Point your camera at a QR code containing **"sixseven"**.</div>
+        <div class="scanner-info">Scanning... Point your camera at a QR code containing **67**.</div>
         <button class="dismiss-btn" style="color: black; margin-top: 20px;" onclick="cancelScan()">Cancel</button>
     </div>
 
@@ -263,7 +263,7 @@
         
         <div class="app-header">
             <h2 id="station-name">Grand Central Station</h2>
-            <span>Connected • Channel: sixseven</span>
+            <span>Connected • Channel 1 (Code 67)</span>
         </div>
 
         <div id="tab-home" class="content-area show">
@@ -389,8 +389,7 @@
 
             // 3. Initialize and Start the Scanner
             const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                // *** FIX IMPLEMENTED HERE: Check for the specific text "sixseven" ***
-                if (decodedText.toLowerCase() === "sixseven") {
+                if (decodedText === "67") {
                     console.log("Station Connected! Code:", decodedText);
                     html5QrCode.stop().then((ignore) => {
                         // Success: Hide scanner, show main app
@@ -405,7 +404,7 @@
                     });
                 } else {
                     // Feedback for wrong code
-                    alert(`Wrong code scanned. Expected "sixseven", got "${decodedText}".`);
+                    alert(`Wrong code scanned: ${decodedText}. Please scan the code '67'.`);
                 }
             };
 
@@ -438,7 +437,7 @@
         }
 
 
-        // --- TAB SWITCHING LOGIC ---
+        // --- TAB SWITCHING LOGIC (Same as before) ---
         window.switchTab = function(tabName, btnElement) {
             document.querySelectorAll('.content-area').forEach(el => el.classList.remove('show'));
             document.getElementById('tab-' + tabName).classList.add('show');
@@ -446,7 +445,7 @@
             btnElement.classList.add('active');
         }
 
-        // --- NOTIFICATION & FIREBASE LOGIC ---
+        // --- NOTIFICATION & FIREBASE LOGIC (Same as before) ---
         const overlay = document.getElementById('notification-overlay');
         const messageEl = document.getElementById('alert-message');
         let lastTimestamp = Date.now();
@@ -456,8 +455,8 @@
         
         onValue(alertsRef, (snapshot) => {
             const data = snapshot.val();
-            // Only trigger if the user is past the onboarding (connected)
             if (data && data.timestamp > lastTimestamp && document.getElementById('screen-app').classList.contains('active')) {
+                // Only trigger if the user is past the onboarding (connected)
                 triggerNotification(data.message);
                 lastTimestamp = data.timestamp;
             }
