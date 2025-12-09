@@ -6,45 +6,17 @@
     <title>Admin Panel</title>
     <style>
         body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: 0 auto; }
-        .card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #333; }
-
-        /* Controls */
-        input[type="text"], .input-group { width: 100%; padding: 15px; font-size: 1.2rem; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px;}
-        button { width: 100%; padding: 20px; font-size: 1.2rem; background: #006492; color: white; border: none; cursor: pointer; border-radius: 8px; font-weight: bold;}
+        input { width: 100%; padding: 15px; font-size: 1.2rem; margin-bottom: 20px; box-sizing: border-box; }
+        button { width: 100%; padding: 20px; font-size: 1.5rem; background: #006492; color: white; border: none; cursor: pointer; }
         button:hover { background: #004b6f; }
         .success { color: green; display: none; margin-top: 10px; font-weight: bold;}
-        
-        /* Themed Controls */
-        .color-row { display: flex; align-items: center; gap: 15px; }
-        input[type="color"] { width: 60px; height: 60px; border: none; cursor: pointer; padding: 0;}
     </style>
 </head>
 <body>
-    <h1>🎛️ Live Director</h1>
-
-    <div class="card">
-        <h2>🛠️ App Configuration</h2>
-        
-        <div class="color-row">
-            <input type="color" id="themeColor" value="#006492" onchange="updateConfig()">
-            <span style="flex:1">Accent Color</span>
-        </div>
-        
-        <input type="text" id="stationName" placeholder="Station Name (e.g. Penn Station)" onchange="updateConfig()">
-
-        <input type="text" id="qrId" placeholder="QR Code ID (e.g., 67)" value="67" onchange="updateConfig()">
-        <span style="font-size:0.9rem; color:#666;">Enter the exact number the QR code contains.</span>
-        
-        <button onclick="updateConfig()">SAVE CONFIG</button>
-    </div>
-
-    <div class="card">
-        <h2>📢 Send Announcement</h2>
-        <input type="text" id="msgInput" placeholder="Enter message (e.g., Gate Change)" value="Gate Change: A4">
-        <button id="sendBtn">SEND NOTIFICATION</button>
-        <div id="status" class="success">Sent!</div>
-    </div>
+    <h2>Admin Announcer</h2>
+    <input type="text" id="msgInput" placeholder="Enter message (e.g., Train Arriving)" value="Gate Change: A4">
+    <button id="sendBtn">SEND NOTIFICATION</button>
+    <div id="status" class="success">Sent!</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
@@ -66,42 +38,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- CONFIGURATION LOGIC ---
-        window.updateConfig = function() {
-            const color = document.getElementById('themeColor').value;
-            const name = document.getElementById('stationName').value || "Haptic Connect Station";
-            const qrId = document.getElementById('qrId').value.trim() || "67";
-            
-            set(ref(db, 'config/theme'), {
-                color: color,
-                name: name,
-                qrId: qrId
-            });
-            
-            // Set initial state for easy setup
-            const status = document.getElementById('status');
-            status.innerText = "Config Saved!";
-            status.style.display = 'block';
-            setTimeout(() => status.style.display = 'none', 1500);
-        }
-        
-        // --- ANNOUNCEMENT LOGIC ---
         document.getElementById('sendBtn').addEventListener('click', () => {
             const msg = document.getElementById('msgInput').value;
             
+            // We write to 'announcements/latest'
+            // We include a timestamp so the client knows it's a NEW message
             set(ref(db, 'announcements/latest'), {
                 message: msg,
                 timestamp: Date.now()
             }).then(() => {
                 const status = document.getElementById('status');
-                status.innerText = "Sent!";
                 status.style.display = 'block';
                 setTimeout(() => status.style.display = 'none', 2000);
             });
         });
-        
-        // Ensure initial config is saved when the page loads
-        document.addEventListener('DOMContentLoaded', updateConfig);
     </script>
 </body>
 </html>
