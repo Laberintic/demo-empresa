@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Haptic Announcement</title>
+    <title>ECHO Demo</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -47,13 +47,16 @@
 
         /* --- ONBOARDING (Centered) --- */
         #screen-onboarding {
-            display: none; /* Controlled by JS classes usually, but default hidden */
+            display: none;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 2rem;
             z-index: 50;
+            height: 100vh;      /* <-- required */
+            width: 100vw;       /* recommended */
         }
+
         #screen-onboarding.active { display: flex; }
 
         .scan-btn {
@@ -142,55 +145,55 @@
     <div id="screen-onboarding" class="screen active">
         <div>
             <span class="material-symbols-outlined" style="font-size: 64px; color: #006492; margin-bottom: 20px;">assist_walker</span>
-            <h1>Haptic Connect</h1>
-            <p>Scan venue code to tune in.</p>
+            <h1>ECHO</h1>
+            <p>Escanea el QR de tu estación.</p>
             <button class="scan-btn" onclick="startCameraSequence()">
                 <span class="material-symbols-outlined">qr_code_scanner</span>
-                Scan Station
+                Escanear
             </button>
         </div>
     </div>
 
     <div id="scanner-ui-container">
         <div id="reader"></div>
-        <div class="scanner-info">Scan code <strong>67</strong></div>
+        <div class="scanner-info">Escanea <strong>tu estación</strong></div>
         <div id="error-output" class="error-log"></div>
-        <button class="dismiss-btn" onclick="cancelScan()">Cancel</button>
+        <button class="dismiss-btn" onclick="cancelScan()">Cancelar</button>
     </div>
 
     <div id="screen-app" class="screen">
         <div class="app-header">
-            <h2 id="station-name">Grand Central</h2>
-            <span>Connected • Channel 1</span>
+            <h2 id="station-name">Estación UniOvi</h2>
+            <span>Conectado • Canal 1</span>
         </div>
 
         <div id="tab-home" class="content-area show">
             <span class="material-symbols-outlined" style="font-size: 100px; color: #006492; margin-top: 40px;">hearing_disabled</span>
-            <h2>Listening...</h2>
+            <h2>Esperando notificaciones...</h2>
         </div>
 
         <div id="tab-history" class="content-area">
-            <h3>Past Stations</h3>
-            <div class="list-card"><strong>Penn Station</strong></div>
-            <div class="list-card"><strong>JFK Terminal 4</strong></div>
+            <h3>EHistorial de Estaciones</h3>
+            <div class="list-card"><strong>Llamaquique</strong></div>
+            <div class="list-card"><strong>Estación de Avilés</strong></div>
         </div>
 
         <div id="tab-profile" class="content-area">
-            <h3 style="margin-bottom:30px">Demo User</h3>
-            <div class="list-card" onclick="location.reload()"><strong>Disconnect</strong></div>
+            <h3 style="margin-bottom:30px">Usuario Demo</h3>
+            <div class="list-card" onclick="location.reload()"><strong>Desconectar</strong></div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('home', this)"><span class="material-symbols-outlined">notifications</span><span>Live</span></button>
-            <button class="nav-item" onclick="switchTab('history', this)"><span class="material-symbols-outlined">history</span><span>History</span></button>
-            <button class="nav-item" onclick="switchTab('profile', this)"><span class="material-symbols-outlined">person</span><span>Profile</span></button>
+            <button class="nav-item active" onclick="switchTab('home', this)"><span class="material-symbols-outlined">notifications</span><span>Notis</span></button>
+            <button class="nav-item" onclick="switchTab('history', this)"><span class="material-symbols-outlined">history</span><span>Historial</span></button>
+            <button class="nav-item" onclick="switchTab('profile', this)"><span class="material-symbols-outlined">person</span><span>Perfil</span></button>
         </nav>
     </div>
 
     <div id="notification-overlay">
         <span class="material-symbols-outlined" style="font-size:120px; color:white">notifications_active</span>
-        <div style="color:white; font-size:2.5rem; font-weight:bold; margin:20px" id="alert-message">ALERT</div>
-        <button class="dismiss-btn" onclick="dismissAlert()">I Understood</button>
+        <div style="color:white; font-size:2.5rem; font-weight:bold; margin:20px" id="alert-message">ALERTA</div>
+        <button class="dismiss-btn" onclick="dismissAlert()">Entendido!</button>
     </div>
 
     <script type="module">
