@@ -48,13 +48,17 @@
         /* --- ONBOARDING (Centered) --- */
         #screen-onboarding {
             display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 2rem;
             z-index: 50;
-            height: 100vh;      /* <-- required */
-            width: 100vw;       /* recommended */
         }
 
         #screen-onboarding.active { display: flex; }
@@ -173,7 +177,7 @@
         </div>
 
         <div id="tab-history" class="content-area">
-            <h3>EHistorial de Estaciones</h3>
+            <h3>Historial de Estaciones</h3>
             <div class="list-card"><strong>Llamaquique</strong></div>
             <div class="list-card"><strong>Estación de Avilés</strong></div>
         </div>
