@@ -45,23 +45,23 @@
         }
         .screen.active { display: flex; }
 
-        /* --- ONBOARDING (Centered) --- */
         #screen-onboarding {
+            position: fixed;
+            inset: 0;
             display: none;
-            flex-direction: column;
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
+
             align-items: center;
             justify-content: center;
             text-align: center;
+
             padding: 2rem;
             z-index: 50;
         }
 
-        #screen-onboarding.active { display: flex; }
+        #screen-onboarding.active {
+            display: flex;
+        }
+
 
         .scan-btn {
             background-color: var(--md-sys-color-primary);
@@ -146,7 +146,7 @@
 </head>
 <body>
 
-    <div id="screen-onboarding" class="screen active">
+    <div id="screen-onboarding" class="active">
         <div>
             <span class="material-symbols-outlined" style="font-size: 64px; color: #006492; margin-bottom: 20px;">assist_walker</span>
             <h1>ECHO</h1>
